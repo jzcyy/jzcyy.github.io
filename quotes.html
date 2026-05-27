@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>随机名言</title>
+  <style>
+    :root {
+      --bg: #f8f9fa;
+      --card-bg: #ffffff;
+      --text: #1a1a2e;
+      --text-secondary: #6c757d;
+      --accent: #4f46e5;
+      --border: #e9ecef;
+      --quote-bg: #f0f0ff;
+      --shadow: 0 1px 3px rgba(0,0,0,0.04), 0 8px 30px rgba(0,0,0,0.06);
+    }
+
+    [data-theme="dark"] {
+      --bg: #0f0f1a;
+      --card-bg: #1a1a2e;
+      --text: #e8e8f0;
+      --text-secondary: #8b8fa3;
+      --accent: #818cf8;
+      --border: #2a2a3e;
+      --quote-bg: #1e1e3a;
+      --shadow: 0 1px 3px rgba(0,0,0,0.3), 0 8px 30px rgba(0,0,0,0.4);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    .theme-toggle {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: var(--card-bg);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text);
+      transition: all 0.2s;
+    }
+
+    .theme-toggle:hover { border-color: var(--accent); color: var(--accent); }
+    .theme-toggle svg { width: 20px; height: 20px; }
+    .theme-toggle .icon-sun { display: none; }
+    .theme-toggle .icon-moon { display: block; }
+    [data-theme="dark"] .theme-toggle .icon-sun { display: block; }
+    [data-theme="dark"] .theme-toggle .icon-moon { display: none; }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: 20px;
+      padding: 48px 40px;
+      max-width: 520px;
+      width: 100%;
+      text-align: center;
+      box-shadow: var(--shadow);
+      transition: background 0.3s;
+    }
+
+    .quote-icon {
+      font-size: 48px;
+      margin-bottom: 20px;
+      opacity: 0.3;
+    }
+
+    .quote-text {
+      font-size: 22px;
+      line-height: 1.6;
+      margin-bottom: 16px;
+      min-height: 70px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.15s;
+    }
+
+    .quote-author {
+      color: var(--text-secondary);
+      font-size: 15px;
+      margin-bottom: 32px;
+    }
+
+    .btn-next {
+      padding: 12px 36px;
+      border-radius: 12px;
+      border: none;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      background: var(--accent);
+      color: #fff;
+      font-family: inherit;
+      transition: all 0.2s;
+    }
+
+    .btn-next:hover {
+      filter: brightness(1.1);
+      transform: translateY(-1px);
+    }
+
+    @media (max-width: 480px) {
+      .card { padding: 32px 24px; }
+      .quote-text { font-size: 18px; }
+    }
+  </style>
+</head>
+<body>
+  <button class="theme-toggle" id="themeToggle" aria-label="切换暗色模式">
+    <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+      <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+    </svg>
+    <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+    </svg>
+  </button>
+
+  <div class="card">
+    <div class="quote-icon">"</div>
+    <div class="quote-text" id="quoteText"></div>
+    <div class="quote-author" id="quoteAuthor"></div>
+    <button class="btn-next" id="btnNext">换一条</button>
+  </div>
+
+  <script>
+    const quotes = [
+      { text: "生活就像一盒巧克力，你永远不知道下一颗是什么味道。", author: "《阿甘正传》" },
+      { text: "千里之行，始于足下。", author: "老子" },
+      { text: "Stay hungry, stay foolish.", author: "Steve Jobs" },
+      { text: "知行合一。", author: "王阳明" },
+      { text: "The only way to do great work is to love what you do.", author: "Steve Jobs" },
+      { text: "不积跬步，无以至千里；不积小流，无以成江海。", author: "荀子" },
+      { text: "Simplicity is the ultimate sophistication.", author: "Leonardo da Vinci" },
+      { text: "山重水复疑无路，柳暗花明又一村。", author: "陆游" },
+      { text: "In the middle of difficulty lies opportunity.", author: "Albert Einstein" },
+      { text: "君子坦荡荡，小人长戚戚。", author: "《论语》" },
+      { text: "The best time to plant a tree was 20 years ago. The second best time is now.", author: "Chinese Proverb" },
+      { text: "学而不思则罔，思而不学则殆。", author: "孔子" },
+      { text: "Be yourself; everyone else is already taken.", author: "Oscar Wilde" },
+      { text: "天行健，君子以自强不息。", author: "《周易》" },
+      { text: "Code is like humor. When you have to explain it, it's bad.", author: "Cory House" },
+      { text: "路漫漫其修远兮，吾将上下而求索。", author: "屈原" },
+      { text: "Talk is cheap. Show me the code.", author: "Linus Torvalds" },
+      { text: "己所不欲，勿施于人。", author: "孔子" },
+      { text: "It does not matter how slowly you go as long as you do not stop.", author: "Confucius" },
+      { text: "海纳百川，有容乃大。", author: "林则徐" },
+    ];
+
+    let lastIndex = -1;
+    const quoteText = document.getElementById('quoteText');
+    const quoteAuthor = document.getElementById('quoteAuthor');
+    const btnNext = document.getElementById('btnNext');
+
+    function randomQuote() {
+      let index;
+      do {
+        index = Math.floor(Math.random() * quotes.length);
+      } while (index === lastIndex && quotes.length > 1);
+      lastIndex = index;
+      return quotes[index];
+    }
+
+    function showQuote() {
+      quoteText.style.opacity = '0';
+      setTimeout(() => {
+        const q = randomQuote();
+        quoteText.textContent = q.text;
+        quoteAuthor.textContent = '— ' + q.author;
+        quoteText.style.opacity = '1';
+      }, 150);
+    }
+
+    btnNext.addEventListener('click', showQuote);
+
+    /* 暗色模式 */
+    const html = document.documentElement;
+    const toggle = document.getElementById('themeToggle');
+    const saved = localStorage.getItem('theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if (saved === 'dark' || (!saved && prefersDark)) {
+      html.setAttribute('data-theme', 'dark');
+    }
+    toggle.addEventListener('click', () => {
+      const isDark = html.getAttribute('data-theme') === 'dark';
+      if (isDark) {
+        html.removeAttribute('data-theme');
+        localStorage.setItem('theme', 'light');
+      } else {
+        html.setAttribute('data-theme', 'dark');
+        localStorage.setItem('theme', 'dark');
+      }
+    });
+
+    showQuote();
+  </script>
+</body>
+</html>
