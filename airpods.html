@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AirPods Pro</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --text: #1d1d1f;
+      --text-secondary: #86868b;
+      --accent: #0071e3;
+      --card-bg: #f5f5f7;
+      --nav-bg: rgba(255,255,255,0.72);
+      --border: #d2d2d7;
+    }
+
+    [data-theme="dark"] {
+      --bg: #000000;
+      --text: #f5f5f7;
+      --text-secondary: #86868b;
+      --accent: #2997ff;
+      --card-bg: #1d1d1f;
+      --nav-bg: rgba(0,0,0,0.72);
+      --border: #424245;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      transition: background 0.3s, color 0.3s;
+    }
+
+    /* 导航 */
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      backdrop-filter: saturate(180%) blur(20px);
+      -webkit-backdrop-filter: saturate(180%) blur(20px);
+      background: var(--nav-bg);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-inner {
+      max-width: 1024px;
+      margin: 0 auto;
+      padding: 0 24px;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .nav-logo {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text);
+      text-decoration: none;
+      letter-spacing: -0.5px;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 28px;
+    }
+
+    .nav-links a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 13px;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover { color: var(--accent); }
+
+    .theme-toggle {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: transparent;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text);
+      transition: all 0.2s;
+    }
+
+    .theme-toggle:hover { border-color: var(--accent); color: var(--accent); }
+    .theme-toggle svg { width: 18px; height: 18px; }
+    .theme-toggle .icon-sun { display: none; }
+    .theme-toggle .icon-moon { display: block; }
+    [data-theme="dark"] .theme-toggle .icon-sun { display: block; }
+    [data-theme="dark"] .theme-toggle .icon-moon { display: none; }
+
+    /* Hero */
+    .hero {
+      padding: 140px 24px 100px;
+      text-align: center;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .hero-badge {
+      display: inline-block;
+      padding: 6px 16px;
+      border-radius: 20px;
+      background: var(--card-bg);
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 24px;
+    }
+
+    .hero h1 {
+      font-size: 64px;
+      font-weight: 700;
+      letter-spacing: -2px;
+      line-height: 1.1;
+      margin-bottom: 16px;
+      background: linear-gradient(135deg, var(--text) 0%, var(--text-secondary) 60%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero .subtitle {
+      font-size: 22px;
+      color: var(--text-secondary);
+      font-weight: 400;
+      margin-bottom: 48px;
+    }
+
+    .product-visual {
+      width: 280px;
+      height: 280px;
+      margin: 0 auto 32px;
+      background: linear-gradient(145deg, #e8e8ed, #c8c8d0);
+      border-radius: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 100px;
+      box-shadow: 0 40px 80px rgba(0,0,0,0.15);
+      transition: transform 0.3s;
+    }
+
+    [data-theme="dark"] .product-visual {
+      background: linear-gradient(145deg, #2a2a2e, #1a1a1e);
+      box-shadow: 0 40px 80px rgba(0,0,0,0.5);
+    }
+
+    .product-visual:hover {
+      transform: scale(1.03);
+    }
+
+    /* 卖点 */
+    .features {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 0 24px 100px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+
+    .feature-card {
+      background: var(--card-bg);
+      border-radius: 24px;
+      padding: 36px 28px;
+      text-align: center;
+      transition: transform 0.3s;
+    }
+
+    .feature-card:hover {
+      transform: translateY(-4px);
+    }
+
+    .feature-icon {
+      font-size: 48px;
+      margin-bottom: 20px;
+    }
+
+    .feature-card h3 {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 10px;
+      letter-spacing: -0.3px;
+    }
+
+    .feature-card p {
+      color: var(--text-secondary);
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    /* CTA */
+    .cta {
+      text-align: center;
+      padding: 60px 24px 120px;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .cta h2 {
+      font-size: 40px;
+      font-weight: 700;
+      letter-spacing: -1px;
+      margin-bottom: 12px;
+    }
+
+    .cta .price {
+      font-size: 20px;
+      color: var(--text-secondary);
+      margin-bottom: 32px;
+    }
+
+    .cta-btn {
+      display: inline-block;
+      padding: 16px 48px;
+      border-radius: 30px;
+      background: var(--accent);
+      color: #fff;
+      text-decoration: none;
+      font-size: 17px;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    .cta-btn:hover {
+      filter: brightness(1.1);
+      transform: translateY(-1px);
+      box-shadow: 0 8px 24px rgba(0, 113, 227, 0.3);
+    }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      padding: 24px;
+      color: var(--text-secondary);
+      font-size: 13px;
+      border-top: 1px solid var(--border);
+    }
+
+    @media (max-width: 768px) {
+      .hero h1 { font-size: 40px; letter-spacing: -1px; }
+      .hero .subtitle { font-size: 18px; }
+      .features { grid-template-columns: 1fr; }
+      .product-visual { width: 220px; height: 220px; font-size: 80px; border-radius: 48px; }
+      .cta h2 { font-size: 28px; }
+      .nav-links { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="nav-inner">
+      <a href="#" class="nav-logo">AirPods Pro</a>
+      <div class="nav-links">
+        <a href="#features">功能</a>
+        <a href="#tech">技术</a>
+        <a href="#buy">购买</a>
+      </div>
+      <button class="theme-toggle" id="themeToggle" aria-label="切换暗色模式">
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+    </div>
+  </nav>
+
+  <section class="hero">
+    <div class="hero-badge">全新发布</div>
+    <h1>AirPods Pro</h1>
+    <p class="subtitle">主动降噪 · 通透模式 · 自适应音频</p>
+    <div class="product-visual">🎧</div>
+  </section>
+
+  <section class="features" id="features">
+    <div class="feature-card">
+      <div class="feature-icon">🔇</div>
+      <h3>主动降噪</h3>
+      <p>每秒 48000 次调整，智能隔绝外界噪音，让你沉浸纯粹的音乐世界。</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔋</div>
+      <h3>超长续航</h3>
+      <p>单次充电聆听 6 小时，搭配充电盒可达 30 小时，全天不断电。</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🎵</div>
+      <h3>空间音频</h3>
+      <p>动态头部追踪，营造三维沉浸感，声音始终围绕在你身边。</p>
+    </div>
+  </section>
+
+  <section class="cta" id="buy">
+    <h2>立刻体验</h2>
+    <p class="price">¥1,899 起</p>
+    <a href="#" class="cta-btn">立即购买</a>
+  </section>
+
+  <footer>
+    Copyright &copy; 2024 AirPods. All rights reserved.
+  </footer>
+
+  <script>
+    const html = document.documentElement;
+    const toggle = document.getElementById('themeToggle');
+    const saved = localStorage.getItem('theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if (saved === 'dark' || (!saved && prefersDark)) {
+      html.setAttribute('data-theme', 'dark');
+    }
+    toggle.addEventListener('click', () => {
+      const isDark = html.getAttribute('data-theme') === 'dark';
+      if (isDark) {
+        html.removeAttribute('data-theme');
+        localStorage.setItem('theme', 'light');
+      } else {
+        html.setAttribute('data-theme', 'dark');
+        localStorage.setItem('theme', 'dark');
+      }
+    });
+  </script>
+</body>
+</html>
