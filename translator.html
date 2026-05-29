@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI 翻译助手 — 中译英</title>
+  <style>
+    :root {
+      --bg: #f8f9fa;
+      --card-bg: #ffffff;
+      --text: #1a1a2e;
+      --text-secondary: #6c757d;
+      --accent: #4f46e5;
+      --border: #e9ecef;
+      --shadow: 0 1px 3px rgba(0,0,0,0.04), 0 8px 30px rgba(0,0,0,0.06);
+    }
+
+    [data-theme="dark"] {
+      --bg: #0f0f1a;
+      --card-bg: #1a1a2e;
+      --text: #e8e8f0;
+      --text-secondary: #8b8fa3;
+      --accent: #818cf8;
+      --border: #2a2a3e;
+      --shadow: 0 1px 3px rgba(0,0,0,0.3), 0 8px 30px rgba(0,0,0,0.4);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    .theme-toggle {
+      position: fixed; top: 20px; right: 20px; width: 40px; height: 40px;
+      border-radius: 50%; border: 1px solid var(--border); background: var(--card-bg);
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      color: var(--text); transition: all 0.2s; z-index: 100;
+    }
+    .theme-toggle:hover { border-color: var(--accent); color: var(--accent); }
+    .theme-toggle svg { width: 20px; height: 20px; }
+    .theme-toggle .icon-sun { display: none; }
+    .theme-toggle .icon-moon { display: block; }
+    [data-theme="dark"] .theme-toggle .icon-sun { display: block; }
+    [data-theme="dark"] .theme-toggle .icon-moon { display: none; }
+
+    .back-link {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 15px;
+      font-weight: 500;
+      transition: color 0.2s;
+      z-index: 100;
+    }
+    .back-link:hover {
+      color: var(--accent);
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: 20px;
+      padding: 48px 40px;
+      max-width: 560px;
+      width: 100%;
+      box-shadow: var(--shadow);
+      transition: background 0.3s;
+    }
+
+    .card h1 {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .card .subtitle {
+      color: var(--text-secondary);
+      font-size: 14px;
+      margin-bottom: 28px;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 150px;
+      padding: 16px 18px;
+      font-size: 16px;
+      line-height: 1.6;
+      font-family: inherit;
+      background: var(--bg);
+      color: var(--text);
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.2s, background 0.3s, color 0.3s;
+    }
+
+    textarea:focus {
+      border-color: var(--accent);
+    }
+
+    textarea::placeholder {
+      color: var(--text-secondary);
+    }
+
+    .actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 18px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      padding: 12px 36px;
+      border-radius: 12px;
+      border: none;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      background: var(--accent);
+      color: #fff;
+      font-family: inherit;
+      transition: all 0.2s;
+    }
+
+    button:hover {
+      filter: brightness(1.1);
+      transform: translateY(-1px);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    button:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+      filter: none;
+      transform: none;
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--text-secondary);
+      border: 1.5px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+      color: var(--text);
+      border-color: var(--text-secondary);
+      filter: none;
+    }
+
+    .result-area {
+      margin-top: 28px;
+      background: var(--bg);
+      border-radius: 14px;
+      padding: 20px 22px;
+      min-height: 80px;
+      border: 1.5px solid var(--border);
+      transition: background 0.3s, color 0.3s, border-color 0.3s;
+      position: relative;
+    }
+
+    .result-area .label {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-secondary);
+      margin-bottom: 10px;
+    }
+
+    .result-area .output {
+      font-size: 17px;
+      line-height: 1.7;
+      word-break: break-word;
+      white-space: pre-wrap;
+    }
+
+    .result-area .output .placeholder {
+      color: var(--text-secondary);
+      font-style: italic;
+    }
+
+    .result-area .output .unchanged {
+      color: var(--text-secondary);
+    }
+
+    .result-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .result-actions button {
+      padding: 6px 16px;
+      font-size: 13px;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--text-secondary);
+      border: 1px solid var(--border);
+    }
+
+    .result-actions button:hover {
+      color: var(--accent);
+      border-color: var(--accent);
+      filter: none;
+      transform: none;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--card-bg);
+      color: var(--text);
+      padding: 10px 24px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 500;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+      opacity: 0;
+      transition: opacity 0.3s, transform 0.3s;
+      pointer-events: none;
+      z-index: 200;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .status-text {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-top: 12px;
+      min-height: 22px;
+      transition: color 0.2s;
+    }
+
+    @media (max-width: 480px) {
+      .card {
+        padding: 32px 24px;
+      }
+
+      .back-link {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Back link -->
+  <a href="index.html" class="back-link">&larr; 返回首页</a>
+
+  <!-- Theme toggle -->
+  <button class="theme-toggle" id="themeToggle" aria-label="切换暗色模式">
+    <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+      <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+    </svg>
+    <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+    </svg>
+  </button>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <!-- Main card -->
+  <div class="card">
+    <h1>AI 翻译助手</h1>
+    <p class="subtitle">中译英 · 真实 AI 驱动</p>
+
+    <textarea id="inputText" placeholder="请输入中文文本…"></textarea>
+
+    <div class="actions">
+      <button id="translateBtn">翻译</button>
+      <button class="btn-secondary" id="clearBtn">清空</button>
+    </div>
+
+    <div class="status-text" id="statusText"></div>
+
+    <div class="result-area">
+      <div class="label">翻译结果</div>
+      <div class="output" id="outputText">
+        <span class="placeholder">等待输入…</span>
+      </div>
+      <div class="result-actions" id="resultActions" style="display:none;">
+        <button id="copyBtn">📋 复制</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ========== 词典 ========== */
+    const dict = {
+      // 问候 / 基础
+      '你好': 'Hello',
+      '你好吗': "How are you",
+      '早上好': 'Good morning',
+      '晚上好': 'Good evening',
+      '再见': 'Goodbye',
+      '谢谢': 'Thank you',
+      '非常感谢': 'Thank you very much',
+      '不客气': "You're welcome",
+      '对不起': 'Sorry',
+      '没关系': "It's okay",
+
+      // 人称 / 代词
+      '我': 'I',
+      '你': 'you',
+      '他': 'he',
+      '她': 'she',
+      '我们': 'we',
+      '他们': 'they',
+      '我的': 'my',
+      '你的': 'your',
+      '他的名字': 'his name',
+
+      // 常用动词 / 短语
+      '是': 'is',
+      '在': 'at',
+      '有': 'have',
+      '去': 'go',
+      '来': 'come',
+      '吃': 'eat',
+      '喝': 'drink',
+      '看': 'see',
+      '喜欢': 'like',
+      '爱': 'love',
+      '想': 'want',
+      '需要': 'need',
+      '可以': 'can',
+      '会': 'will',
+      '知道': 'know',
+      '说': 'say',
+      '做': 'do',
+      '买': 'buy',
+      '学习': 'learn',
+      '工作': 'work',
+      '帮助': 'help',
+      '使用': 'use',
+      '打开': 'open',
+      '关闭': 'close',
+
+      // 名词 — 生活
+      '世界': 'world',
+      '人': 'person',
+      '朋友': 'friend',
+      '家人': 'family',
+      '名字': 'name',
+      '书': 'book',
+      '电脑': 'computer',
+      '手机': 'phone',
+      '时间': 'time',
+      '今天': 'today',
+      '明天': 'tomorrow',
+      '昨天': 'yesterday',
+      '现在': 'now',
+      '早上': 'morning',
+      '下午': 'afternoon',
+      '晚上': 'evening',
+      '天气': 'weather',
+      '水': 'water',
+      '食物': 'food',
+      '茶': 'tea',
+      '咖啡': 'coffee',
+      '家': 'home',
+      '学校': 'school',
+      '公司': 'company',
+      '城市': 'city',
+      '中国': 'China',
+      '北京': 'Beijing',
+
+      // 形容词
+      '好': 'good',
+      '很好': 'very good',
+      '坏': 'bad',
+      '大': 'big',
+      '小': 'small',
+      '快': 'fast',
+      '慢': 'slow',
+      '新': 'new',
+      '老': 'old',
+      '美丽': 'beautiful',
+      '漂亮': 'pretty',
+      '聪明': 'smart',
+      '有趣': 'interesting',
+      '重要': 'important',
+      '简单': 'simple',
+      '困难': 'difficult',
+      '开心': 'happy',
+      '难过': 'sad',
+
+      // 技术 / 抽象
+      '编程': 'programming',
+      '程序': 'program',
+      '代码': 'code',
+      '网站': 'website',
+      '应用': 'app',
+      '数据': 'data',
+      '人工智能': 'artificial intelligence',
+      '机器学习': 'machine learning',
+      '深度学习': 'deep learning',
+      '算法': 'algorithm',
+      '软件': 'software',
+      '硬件': 'hardware',
+      '网络': 'network',
+      '安全': 'security',
+      '设计': 'design',
+      '开发': 'development',
+      '测试': 'testing',
+      '项目': 'project',
+      '文档': 'document',
+      '工具': 'tool',
+
+      // 更多常用句
+      '我爱你': 'I love you',
+      '我喜欢你': 'I like you',
+      '我喜欢': 'I like',
+      '我不知道': "I don't know",
+      '我明白': 'I understand',
+      '我不明白': "I don't understand",
+      '请等一下': 'Please wait a moment',
+      '多少钱': 'How much',
+      '这是什么': 'What is this',
+      '祝你好运': 'Good luck',
+      '生日快乐': 'Happy birthday',
+      '新年快乐': 'Happy New Year',
+      '好久不见': 'Long time no see',
+      '很高兴认识你': 'Nice to meet you',
+      '你说得对': "You're right",
+    };
+
+    /* ========== AI API ========== */
+    const POLLINATIONS_URL = 'https://text.pollinations.ai/';
+
+    function isInvalidResponse(text) {
+        const t = text.toLowerCase();
+        return t.length < 2 ||
+            t.includes('hey there') ||
+            t.includes('pollinations') ||
+            t.includes('<html') ||
+            t.includes('<react-app');
+    }
+
+    async function callAI(prompt) {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 25000); // 25s timeout for free tier
+        try {
+            const resp = await fetch(
+                POLLINATIONS_URL + encodeURIComponent(prompt) + '?model=openai',
+                { signal: controller.signal }
+            );
+            clearTimeout(timeout);
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            const text = await resp.text();
+            if (isInvalidResponse(text)) throw new Error('AI returned invalid response');
+            return text.trim();
+        } catch (err) {
+            clearTimeout(timeout);
+            throw err;
+        }
+    }
+
+    /* ========== 排序：长词优先匹配 ========== */
+    const sortedKeys = Object.keys(dict).sort((a, b) => b.length - a.length);
+
+    /**
+     * 简单分词翻译：
+     *   1) 从文本头部开始，尝试匹配最长的词典词条
+     *   2) 匹配成功 → 追加译文；从匹配位置后继续
+     *   3) 匹配不到单个字符 → 保持原字符；继续
+     */
+    function translate(text) {
+      if (!text.trim()) return '';
+
+      const parts = [];
+      let i = 0;
+      const len = text.length;
+
+      while (i < len) {
+        let matched = false;
+
+        // 尝试从 i 开始匹配词典中的词
+        for (const key of sortedKeys) {
+          if (text.slice(i, i + key.length) === key) {
+            parts.push(dict[key]);
+            i += key.length;
+            matched = true;
+            break;
+          }
+        }
+
+        if (matched) continue;
+
+        // 没匹配上 → 保留原字符（标点、空格、未知汉字等）
+        // 但如果连续英文字母/数字，尽量作为一个 token 保留
+        let j = i + 1;
+        const ch = text[i];
+        // 如果当前字符是英文字母或数字，一直取到非字母数字为止
+        if (/[a-zA-Z0-9]/.test(ch)) {
+          while (j < len && /[a-zA-Z0-9]/.test(text[j])) j++;
+        } else if (/[\s]/.test(ch)) {
+          // 空白字符尽量一起保留
+          while (j < len && /[\s]/.test(text[j])) j++;
+        }
+        // 否则只保留单字符
+        parts.push(text.slice(i, j));
+        i = j;
+      }
+
+      return parts.join('');
+    }
+
+    /* ========== DOM refs ========== */
+    const inputEl = document.getElementById('inputText');
+    const translateBtn = document.getElementById('translateBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const outputEl = document.getElementById('outputText');
+    const statusEl = document.getElementById('statusText');
+    const copyBtn = document.getElementById('copyBtn');
+    const resultActions = document.getElementById('resultActions');
+    const toastEl = document.getElementById('toast');
+
+    let isTranslating = false;
+
+    /* ========== 翻译 ========== */
+    async function doTranslate() {
+      if (isTranslating) return;
+      const input = inputEl.value.trim();
+      if (!input) {
+        statusEl.textContent = '⚠️ 请先输入中文文本';
+        return;
+      }
+
+      isTranslating = true;
+      translateBtn.disabled = true;
+      statusEl.textContent = '🤖 AI 翻译中...';
+      outputEl.innerHTML = '<span class="placeholder">AI 翻译中…</span>';
+      resultActions.style.display = 'none';
+
+      const prompt = `请将以下中文文本翻译成英文。只返回翻译结果，不要任何解释、注释或前缀：\n\n${input}`;
+
+      try {
+        const result = await callAI(prompt);
+        outputEl.innerHTML = result
+          ? `<span>${escapeHtml(result)}</span>`
+          : '<span class="placeholder">（AI 返回为空）</span>';
+        resultActions.style.display = result ? 'flex' : 'none';
+        statusEl.textContent = '✅ AI 翻译完成';
+      } catch (err) {
+        console.warn('AI API failed, using local fallback:', err.message);
+        // Fallback to local dictionary
+        const fallback = translate(input);
+        const displayFallback = fallback
+          ? `<span>${escapeHtml(fallback)}</span>`
+          : '<span class="placeholder">（词典中未找到匹配词条）</span>';
+        outputEl.innerHTML = displayFallback;
+        resultActions.style.display = fallback ? 'flex' : 'none';
+        statusEl.textContent = '⚠️ API 不可用，已使用本地词典翻译';
+      }
+
+      isTranslating = false;
+      translateBtn.disabled = false;
+    }
+
+    /* 简单转义防止 XSS */
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    /* ========== 复制 ========== */
+    copyBtn.addEventListener('click', async () => {
+      const text = outputEl.textContent;
+      if (!text || text === '等待输入…' || text === '翻译中…') return;
+
+      try {
+        await navigator.clipboard.writeText(text);
+        showToast('✅ 已复制到剪贴板');
+      } catch {
+        // fallback
+        const range = document.createRange();
+        range.selectNodeContents(outputEl);
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+        document.execCommand('copy');
+        sel.removeAllRanges();
+        showToast('✅ 已复制（传统方式）');
+      }
+    });
+
+    /* ========== 清空 ========== */
+    clearBtn.addEventListener('click', () => {
+      inputEl.value = '';
+      outputEl.innerHTML = '<span class="placeholder">等待输入…</span>';
+      statusEl.textContent = '';
+      resultActions.style.display = 'none';
+      if (isTranslating) {
+        isTranslating = false;
+        translateBtn.disabled = false;
+      }
+    });
+
+    /* ========== Toast ========== */
+    let toastTimer = null;
+
+    function showToast(msg) {
+      toastEl.textContent = msg;
+      toastEl.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toastEl.classList.remove('show');
+      }, 2500);
+    }
+
+    /* ========== 事件绑定 ========== */
+    translateBtn.addEventListener('click', doTranslate);
+
+    inputEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        doTranslate();
+      }
+    });
+
+    /* ========== 主题切换 ========== */
+    (function initTheme() {
+      const html = document.documentElement;
+      const toggle = document.getElementById('themeToggle');
+      const saved = localStorage.getItem('theme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (saved === 'dark' || (!saved && prefersDark)) {
+        html.setAttribute('data-theme', 'dark');
+      }
+      toggle.addEventListener('click', () => {
+        const isDark = html.getAttribute('data-theme') === 'dark';
+        if (isDark) {
+          html.removeAttribute('data-theme');
+          localStorage.setItem('theme', 'light');
+        } else {
+          html.setAttribute('data-theme', 'dark');
+          localStorage.setItem('theme', 'dark');
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

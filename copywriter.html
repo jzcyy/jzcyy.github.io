@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 文案生成器</title>
+<style>
+    :root {
+      --bg: #f8f9fa;
+      --card-bg: #ffffff;
+      --text: #1a1a2e;
+      --text-secondary: #6c757d;
+      --accent: #4f46e5;
+      --border: #e9ecef;
+      --shadow: 0 1px 3px rgba(0,0,0,0.04), 0 8px 30px rgba(0,0,0,0.06);
+    }
+
+    [data-theme="dark"] {
+      --bg: #0f0f1a;
+      --card-bg: #1a1a2e;
+      --text: #e8e8f0;
+      --text-secondary: #8b8fa3;
+      --accent: #818cf8;
+      --border: #2a2a3e;
+      --shadow: 0 1px 3px rgba(0,0,0,0.3), 0 8px 30px rgba(0,0,0,0.4);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    .back-link {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 14px;
+      transition: color 0.2s;
+      z-index: 10;
+    }
+    .back-link:hover {
+      color: var(--accent);
+    }
+
+    .theme-toggle {
+      position: fixed; top: 20px; right: 20px; width: 40px; height: 40px;
+      border-radius: 50%; border: 1px solid var(--border); background: var(--card-bg);
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      color: var(--text); transition: all 0.2s;
+    }
+    .theme-toggle:hover { border-color: var(--accent); color: var(--accent); }
+    .theme-toggle svg { width: 20px; height: 20px; }
+    .theme-toggle .icon-sun { display: none; }
+    .theme-toggle .icon-moon { display: block; }
+    [data-theme="dark"] .theme-toggle .icon-sun { display: block; }
+    [data-theme="dark"] .theme-toggle .icon-moon { display: none; }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: 20px;
+      padding: 48px 40px;
+      max-width: 520px; width: 100%;
+      text-align: center;
+      box-shadow: var(--shadow);
+      transition: background 0.3s;
+    }
+
+    h1 {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-bottom: 32px;
+    }
+
+    .input-group {
+      margin-bottom: 24px;
+    }
+
+    .input-group label {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      text-align: left;
+    }
+
+    .input-group input {
+      width: 100%;
+      padding: 12px 16px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      font-size: 16px;
+      font-family: inherit;
+      transition: border-color 0.2s, background 0.3s;
+      outline: none;
+    }
+
+    .input-group input:focus {
+      border-color: var(--accent);
+    }
+
+    .input-group input::placeholder {
+      color: var(--text-secondary);
+    }
+
+    .btn-primary {
+      padding: 12px 36px; border-radius: 12px; border: none;
+      font-size: 16px; font-weight: 600; cursor: pointer;
+      background: var(--accent); color: #fff;
+      font-family: inherit; transition: all 0.2s;
+    }
+    .btn-primary:hover { filter: brightness(1.1); transform: translateY(-1px); }
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+      filter: none;
+    }
+
+    .output-section {
+      margin-top: 28px;
+      padding-top: 28px;
+      border-top: 1px solid var(--border);
+      display: none;
+    }
+
+    .output-section.visible {
+      display: block;
+    }
+
+    .result-card {
+      background: var(--bg);
+      border-radius: 16px;
+      padding: 24px 20px;
+      margin-bottom: 20px;
+      min-height: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.3s;
+    }
+
+    .result-text {
+      font-size: 18px;
+      line-height: 1.6;
+      font-weight: 500;
+      word-break: break-word;
+    }
+
+    .btn-secondary {
+      padding: 10px 28px; border-radius: 12px; border: 1px solid var(--border);
+      font-size: 14px; font-weight: 500; cursor: pointer;
+      background: var(--card-bg); color: var(--text-secondary);
+      font-family: inherit; transition: all 0.2s;
+    }
+    .btn-secondary:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      transform: translateY(-1px);
+    }
+
+    .loading-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 0;
+    }
+
+    .spinner {
+      width: 36px;
+      height: 36px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+      font-size: 14px;
+      color: var(--text-secondary);
+      animation: blink 1.2s ease-in-out infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    .footer-text {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-top: 20px;
+    }
+
+    @media (max-width: 480px) {
+      .card { padding: 32px 24px; }
+      h1 { font-size: 22px; }
+      .result-text { font-size: 16px; }
+    }
+</style>
+</head>
+<body>
+
+<a href="index.html" class="back-link">&larr; 返回首页</a>
+
+<button class="theme-toggle" id="themeToggle" aria-label="切换暗色模式">
+    <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+      <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+    </svg>
+    <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+    </svg>
+</button>
+
+<div class="card">
+    <h1>✨ AI 文案生成器</h1>
+    <p class="subtitle">输入产品名称，让 AI 为你创作精彩广告语（真实 AI 驱动）</p>
+
+    <div class="input-group">
+        <label for="productName">产品名称</label>
+        <input type="text" id="productName" placeholder="例如：智能手表、咖啡机、运动鞋..." />
+    </div>
+
+    <button class="btn-primary" id="generateBtn">生成文案</button>
+
+    <div class="output-section" id="outputSection">
+        <div id="resultArea">
+            <div class="result-card">
+                <div class="result-text" id="resultText"></div>
+            </div>
+        </div>
+        <button class="btn-secondary" id="retryBtn">换一条</button>
+    </div>
+
+    <p class="footer-text" id="statusText"></p>
+</div>
+
+<script>
+    /* ===== 主题切换 ===== */
+    (function(){
+      const html = document.documentElement;
+      const toggle = document.getElementById('themeToggle');
+      const saved = localStorage.getItem('theme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (saved === 'dark' || (!saved && prefersDark)) {
+        html.setAttribute('data-theme', 'dark');
+      }
+      toggle.addEventListener('click', () => {
+        const isDark = html.getAttribute('data-theme') === 'dark';
+        if (isDark) {
+          html.removeAttribute('data-theme');
+          localStorage.setItem('theme', 'light');
+        } else {
+          html.setAttribute('data-theme', 'dark');
+          localStorage.setItem('theme', 'dark');
+        }
+      });
+    })();
+
+    /* ===== 文案模板库 ===== */
+    const TEMPLATES = [
+        { template: '告别平庸，{product}重新定义你的每一天', style: '潮流' },
+        { template: '有了{product}，生活从未如此简单', style: '温情' },
+        { template: '选择{product}，选择一种更{adj}的生活方式', style: '商务' },
+        { template: '不止于想象，{product}让未来触手可及', style: '科技' },
+        { template: '{product} — 你值得拥有的每一个瞬间', style: '温情' },
+        { template: '用{product}，写给生活的情书', style: '文艺' },
+        { template: '{product}，为每一个不甘平庸的你而生', style: '潮流' },
+        { template: '这一刻，让{product}陪你重新出发', style: '简洁' },
+        { template: '比极致更极致 — {product}，超越期待', style: '商务' },
+        { template: '用心做好每件事，{product}懂你的坚持', style: '温情' },
+        { template: '潮流易逝，风格永存。{product}，定义你的态度', style: '潮流' },
+        { template: '把复杂留给我们，把简单交给{product}', style: '简洁' },
+    ];
+
+    const ADJECTIVES = ['高效', '自由', '智能', '从容', '优雅', '舒适', '精致', '温暖', '勇敢', '纯粹'];
+
+    const POLLINATIONS_URL = 'https://text.pollinations.ai/';
+
+    function isInvalidResponse(text) {
+        const t = text.toLowerCase();
+        return t.length < 2 ||
+            t.includes('hey there') ||
+            t.includes('pollinations') ||
+            t.includes('<html') ||
+            t.includes('<react-app');
+    }
+
+    async function callAI(prompt) {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 25000); // 25s timeout for free tier
+        try {
+            const resp = await fetch(
+                POLLINATIONS_URL + encodeURIComponent(prompt) + '?model=openai',
+                { signal: controller.signal }
+            );
+            clearTimeout(timeout);
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            const text = await resp.text();
+            if (isInvalidResponse(text)) throw new Error('AI returned invalid response');
+            return text.trim();
+        } catch (err) {
+            clearTimeout(timeout);
+            throw err;
+        }
+    }
+
+    function pickRandom(arr) {
+        return arr[Math.floor(Math.random() * arr.length)];
+    }
+
+    function generateCopy(product) {
+        const entry = pickRandom(TEMPLATES);
+        let copy = entry.template.replace(/\{product\}/g, product);
+        copy = copy.replace(/\{adj\}/g, pickRandom(ADJECTIVES));
+        return copy;
+    }
+
+    /* ===== 核心逻辑 ===== */
+    const productInput = document.getElementById('productName');
+    const generateBtn = document.getElementById('generateBtn');
+    const outputSection = document.getElementById('outputSection');
+    const resultText = document.getElementById('resultText');
+    const retryBtn = document.getElementById('retryBtn');
+    const statusText = document.getElementById('statusText');
+    const resultArea = document.getElementById('resultArea');
+
+    let isLoading = false;
+    let currentProduct = '';
+
+    function setLoading(loading) {
+        isLoading = loading;
+        generateBtn.disabled = loading;
+        if (loading) {
+            resultArea.innerHTML = `
+                <div class="loading-wrapper">
+                    <div class="spinner"></div>
+                    <div class="loading-text">思考中...</div>
+                </div>
+            `;
+            outputSection.classList.add('visible');
+            statusText.textContent = '🤖 AI 正在创作...';
+        }
+    }
+
+    function showResult(text) {
+        resultArea.innerHTML = '<div class="result-card"><div class="result-text" id="resultText"></div></div>';
+        document.getElementById('resultText').textContent = text;
+        statusText.textContent = '文案已生成';
+    }
+
+    async function doGenerate() {
+        const product = productInput.value.trim();
+        if (!product) {
+            statusText.textContent = '⚠️ 请先输入产品名称';
+            productInput.focus();
+            return;
+        }
+
+        currentProduct = product;
+        setLoading(true);
+        statusText.textContent = '🤖 AI 正在创作...';
+
+        const prompt = `你是一个资深广告文案专家。请为产品"${product}"创作一条中文广告语。要求：简短有力，不超过50字，朗朗上口，有传播力。只返回广告语本身，不要任何解释或前缀。`;
+
+        try {
+            const result = await callAI(prompt);
+            showResult(result);
+            statusText.textContent = '✅ AI 驱动 · 文案已生成';
+        } catch (err) {
+            // Fallback to local templates
+            console.warn('AI API failed, using local fallback:', err.message);
+            const copy = generateCopy(product);
+            showResult(copy);
+            statusText.textContent = '⚠️ API 不可用，已使用本地模板生成';
+        }
+        setLoading(false);
+    }
+
+    generateBtn.addEventListener('click', doGenerate);
+
+    productInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            doGenerate();
+        }
+    });
+
+    retryBtn.addEventListener('click', async () => {
+        if (!currentProduct && !productInput.value.trim()) {
+            statusText.textContent = '⚠️ 请先输入产品名称';
+            productInput.focus();
+            return;
+        }
+        if (!currentProduct) {
+            currentProduct = productInput.value.trim();
+        }
+        setLoading(true);
+        statusText.textContent = '🤖 AI 正在创作...';
+
+        const prompt = `你是一个资深广告文案专家。请为产品"${currentProduct}"创作一条中文广告语。要求：简短有力，不超过50字，朗朗上口，有传播力。只返回广告语本身，不要任何解释或前缀。（注意：与上次不同）`;
+
+        try {
+            const result = await callAI(prompt);
+            showResult(result);
+            statusText.textContent = '✅ AI 驱动 · 文案已生成';
+        } catch (err) {
+            console.warn('AI API failed, using local fallback:', err.message);
+            const copy = generateCopy(currentProduct);
+            showResult(copy);
+            statusText.textContent = '⚠️ API 不可用，已使用本地模板生成';
+        }
+        setLoading(false);
+    });
+</script>
+</body>
+</html>

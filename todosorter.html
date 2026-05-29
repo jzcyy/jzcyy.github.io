@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 待办事项智能排序</title>
+<style>
+    :root {
+      --bg: #f8f9fa;
+      --card-bg: #ffffff;
+      --text: #1a1a2e;
+      --text-secondary: #6c757d;
+      --accent: #4f46e5;
+      --border: #e9ecef;
+      --shadow: 0 1px 3px rgba(0,0,0,0.04), 0 8px 30px rgba(0,0,0,0.06);
+    }
+
+    [data-theme="dark"] {
+      --bg: #0f0f1a;
+      --card-bg: #1a1a2e;
+      --text: #e8e8f0;
+      --text-secondary: #8b8fa3;
+      --accent: #818cf8;
+      --border: #2a2a3e;
+      --shadow: 0 1px 3px rgba(0,0,0,0.3), 0 8px 30px rgba(0,0,0,0.4);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    .theme-toggle {
+      position: fixed; top: 20px; right: 20px; width: 40px; height: 40px;
+      border-radius: 50%; border: 1px solid var(--border); background: var(--card-bg);
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      color: var(--text); transition: all 0.2s;
+    }
+    .theme-toggle:hover { border-color: var(--accent); color: var(--accent); }
+    .theme-toggle svg { width: 20px; height: 20px; }
+    .theme-toggle .icon-sun { display: none; }
+    .theme-toggle .icon-moon { display: block; }
+    [data-theme="dark"] .theme-toggle .icon-sun { display: block; }
+    [data-theme="dark"] .theme-toggle .icon-moon { display: none; }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: 20px;
+      padding: 48px 40px;
+      max-width: 560px;
+      width: 100%;
+      box-shadow: var(--shadow);
+      transition: background 0.3s;
+    }
+
+    .back-link {
+      display: inline-block;
+      margin-bottom: 28px;
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+    .back-link:hover {
+      color: var(--accent);
+    }
+
+    h1 {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      color: var(--text-secondary);
+      font-size: 14px;
+      margin-bottom: 24px;
+    }
+
+    textarea {
+      width: 100%;
+      height: 180px;
+      padding: 16px;
+      border-radius: 12px;
+      border: 1.5px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      font-size: 15px;
+      font-family: inherit;
+      line-height: 1.6;
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    textarea:focus {
+      border-color: var(--accent);
+    }
+    textarea::placeholder {
+      color: var(--text-secondary);
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 20px;
+      align-items: center;
+    }
+
+    button {
+      padding: 12px 36px;
+      border-radius: 12px;
+      border: none;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      background: var(--accent);
+      color: #fff;
+      font-family: inherit;
+      transition: all 0.2s;
+    }
+    button:hover {
+      filter: brightness(1.1);
+      transform: translateY(-1px);
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      filter: none;
+      transform: none;
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--text-secondary);
+      border: 1.5px solid var(--border);
+      padding: 12px 24px;
+    }
+    .btn-secondary:hover {
+      border-color: var(--text-secondary);
+      color: var(--text);
+    }
+
+    .status {
+      margin-top: 16px;
+      font-size: 14px;
+      color: var(--text-secondary);
+      min-height: 22px;
+    }
+
+    .result-list {
+      margin-top: 24px;
+      border-top: 1px solid var(--border);
+      padding-top: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .result-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--border);
+      animation: fadeIn 0.3s ease-out;
+    }
+    .result-item:last-child {
+      border-bottom: none;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .priority-badge {
+      flex-shrink: 0;
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .priority-1 { background: #fee2e2; color: #dc2626; }
+    .priority-2 { background: #ffedd5; color: #ea580c; }
+    .priority-3 { background: #fef9c3; color: #ca8a04; }
+    .priority-4 { background: #dbeafe; color: #2563eb; }
+    .priority-5 { background: var(--border); color: var(--text-secondary); }
+
+    .result-text {
+      font-size: 15px;
+      line-height: 1.5;
+      word-break: break-word;
+    }
+
+    .empty-hint {
+      text-align: center;
+      color: var(--text-secondary);
+      font-size: 14px;
+      padding: 24px 0;
+    }
+
+    @media (max-width: 480px) {
+      .card { padding: 32px 24px; }
+      h1 { font-size: 20px; }
+      .toolbar { flex-direction: column; }
+      button { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+  <button class="theme-toggle" id="themeToggle" aria-label="切换暗色模式">
+    <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+      <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+    </svg>
+    <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+    </svg>
+  </button>
+
+  <div class="card">
+    <a href="index.html" class="back-link">&larr; 返回首页</a>
+    <h1>AI 待办事项智能排序</h1>
+    <p class="subtitle">输入你的待办事项，每行一个任务，AI 将按优先级智能排序（真实 AI 驱动）</p>
+
+    <textarea id="todoInput" placeholder="例：&#10;紧急：明天要交的报告&#10;今天约了医生&#10;学习 TypeScript&#10;买日用品"></textarea>
+
+    <div class="toolbar">
+      <button id="sortBtn">智能排序</button>
+      <button id="clearBtn" class="btn-secondary">清空</button>
+    </div>
+
+    <div class="status" id="status"></div>
+
+    <div class="result-list" id="resultList">
+      <div class="empty-hint">输入任务后点击"智能排序"开始</div>
+    </div>
+  </div>
+
+  <script>
+    const html = document.documentElement;
+    const toggle = document.getElementById('themeToggle');
+    const saved = localStorage.getItem('theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if (saved === 'dark' || (!saved && prefersDark)) {
+      html.setAttribute('data-theme', 'dark');
+    }
+    toggle.addEventListener('click', () => {
+      const isDark = html.getAttribute('data-theme') === 'dark';
+      if (isDark) {
+        html.removeAttribute('data-theme');
+        localStorage.setItem('theme', 'light');
+      } else {
+        html.setAttribute('data-theme', 'dark');
+        localStorage.setItem('theme', 'dark');
+      }
+    });
+
+/* ===== AI API ===== */
+const POLLINATIONS_URL = 'https://text.pollinations.ai/';
+
+function isInvalidResponse(text) {
+    const t = text.toLowerCase();
+    return t.length < 2 ||
+        t.includes('hey there') ||
+        t.includes('pollinations') ||
+        t.includes('<html') ||
+        t.includes('<react-app');
+}
+
+async function callAI(prompt) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 25000); // 25s timeout for free tier
+    try {
+        const resp = await fetch(
+            POLLINATIONS_URL + encodeURIComponent(prompt) + '?model=openai',
+            { signal: controller.signal }
+        );
+        clearTimeout(timeout);
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const text = await resp.text();
+        if (isInvalidResponse(text)) throw new Error('AI returned invalid response');
+        return text.trim();
+    } catch (err) {
+        clearTimeout(timeout);
+        throw err;
+    }
+}
+
+    // ----- Todo Sorter Logic -----
+
+    const todoInput = document.getElementById('todoInput');
+    const sortBtn = document.getElementById('sortBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const status = document.getElementById('status');
+    const resultList = document.getElementById('resultList');
+
+    // 优先级判断规则
+    function getPriority(text) {
+      const lower = text.toLowerCase();
+      // Priority 1: 紧急
+      if (/\b(紧急|urgent|立刻|马上)\b/.test(lower)) return 1;
+      // Priority 2: 重要
+      if (/\b(重要|important|deadline|截止)\b/.test(lower)) return 2;
+      // Priority 3: 尽快
+      if (/\b(今天|today|尽快|asap)\b/.test(lower)) return 3;
+      // Priority 4: 自我提升
+      if (/\b(学习|study|阅读|read|运动|exercise)\b/.test(lower)) return 4;
+      // Priority 5: 其他
+      return 5;
+    }
+
+    function renderResults(items) {
+      if (items.length === 0) {
+        resultList.innerHTML = '<div class="empty-hint">暂无任务，输入后点击排序</div>';
+        return;
+      }
+      resultList.innerHTML = items.map((item, index) => {
+        const pClass = 'priority-' + item.priority;
+        return `<div class="result-item" style="animation-delay: ${index * 0.05}s">
+          <span class="priority-badge ${pClass}">${item.priority}</span>
+          <span class="result-text">${escapeHtml(item.text)}</span>
+        </div>`;
+      }).join('');
+    }
+
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    function getTasks() {
+      return todoInput.value.split('\n')
+        .map(s => s.trim())
+        .filter(s => s.length > 0);
+    }
+
+    async function doSort() {
+      const tasks = getTasks();
+      if (tasks.length === 0) {
+        status.textContent = '⚠️ 请至少输入一个待办事项';
+        return;
+      }
+
+      sortBtn.disabled = true;
+      status.textContent = '🤖 AI 分析中...';
+
+      const taskList = tasks.map((t, i) => `${i + 1}. ${t}`).join('\n');
+      const prompt = `请分析以下待办事项列表，按优先级从高到低重新排序。每个事项保持原文不变，只改变顺序。优先级判断标准：紧急/立刻/马上 > 重要/截止日期 > 今天/尽快 > 学习/阅读/运动/自我提升 > 其他。请只返回排序后的列表，用序号标注，如：\n1. xxx\n2. xxx\n不要任何解释。\n\n${taskList}`;
+
+      try {
+        const result = await callAI(prompt);
+        // Parse AI response into ordered task list
+        const lines = result.split('\n').map(s => s.trim()).filter(s => s.length > 0);
+        const parsedItems = [];
+        lines.forEach(line => {
+          // Remove leading number like "1. " or "1、"
+          const text = line.replace(/^\d+[\.\、\)\s]+/, '').trim();
+          if (text && tasks.some(t => t === text)) {
+            parsedItems.push({ text, priority: parsedItems.length + 1 });
+          }
+        });
+
+        if (parsedItems.length > 0) {
+          renderResults(parsedItems);
+          status.textContent = `✅ AI 排序完成 — 共 ${parsedItems.length} 项任务`;
+        } else {
+          throw new Error('Failed to parse AI response');
+        }
+      } catch (err) {
+        console.warn('AI API failed, using local fallback:', err.message);
+        // Fallback to local keyword-based sorting
+        const items = tasks.map(text => ({
+          text: text,
+          priority: getPriority(text)
+        }));
+        items.sort((a, b) => a.priority - b.priority);
+        // Re-assign priority numbers sequentially
+        items.forEach((item, i) => { item.priority = i + 1; });
+        renderResults(items);
+        status.textContent = '⚠️ API 不可用，已使用本地规则排序';
+      }
+
+      sortBtn.disabled = false;
+    }
+
+    function clearAll() {
+      todoInput.value = '';
+      resultList.innerHTML = '<div class="empty-hint">输入任务后点击"智能排序"开始</div>';
+      status.textContent = '';
+    }
+
+    // 事件绑定
+    sortBtn.addEventListener('click', doSort);
+    clearBtn.addEventListener('click', clearAll);
+
+    // Ctrl+Enter 快捷排序
+    todoInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        doSort();
+      }
+    });
+  </script>
+</body>
+</html>
